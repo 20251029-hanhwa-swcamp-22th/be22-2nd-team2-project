@@ -111,23 +111,23 @@ graph LR
         direction TB
         
         %% Auth
-        UC1[회원가입/로그인]
+        UC1["회원가입/로그인"]
         
         %% Read
-        UC2[소설 목록 조회<br>(필터링/검색)]
-        UC3[소설 상세/책 뷰]
+        UC2["소설 목록 조회<br>(필터링/검색)"]
+        UC3["소설 상세/책 뷰"]
         
         %% Write
-        UC4[소설 방 만들기]
-        UC5[문장 이어 쓰기<br>(Relay)]
+        UC4["소설 방 만들기"]
+        UC5["문장 이어 쓰기<br>(Relay)"]
         
         %% Interact
-        UC6[투표<br>(Book/Sentence)]
-        UC7[댓글 작성<br>(Book Only)]
+        UC6["투표<br>(Book/Sentence)"]
+        UC7["댓글 작성<br>(Book Only)"]
         
         %% My
-        UC8[마이페이지<br>(내 서재)]
-        UC9[회원 탈퇴<br>(Soft Delete)]
+        UC8["마이페이지<br>(내 서재)"]
+        UC9["회원 탈퇴<br>(Soft Delete)"]
     end
 
     %% Relations - Guest
