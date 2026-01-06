@@ -110,56 +110,57 @@ graph LR
     subgraph System ["System (Next Page)"]
         direction TB
         
-        %% Auth
-        UC_Join["회원가입"]
-        UC_Login["로그인"]
-        UC_My["마이페이지"]
-        UC_Out["회원 탈퇴"]
+        %% Use Cases
+        UC_Join((회원가입))
+        UC_Login((로그인))
+        UC_List((목록 조회))
+        UC_Search((검색))
+        UC_Filter((필터링))
+        UC_View((상세 조회))
+        UC_BookView((책 뷰 모드))
         
-        %% Read
-        UC_List["소설 목록 조회"]
-        UC_Search["검색"]
-        UC_Filter["필터링"]
-        UC_View["소설 상세 조회"]
-        UC_BookView["책 뷰 모드"]
+        UC_Create((소설 생성))
+        UC_Relay((이어 쓰기))
+        UC_Check((데이터 검증))
         
-        %% Write
-        UC_Create["소설 생성"]
-        UC_Relay["문장 이어 쓰기"]
-        UC_Check["순서/중복 확인"]
+        UC_VoteBook((소설 투표))
+        UC_VoteSent((문장 투표))
+        UC_Comment((댓글 작성))
         
-        %% Interact
-        UC_VoteBook["소설 투표"]
-        UC_VoteSent["문장 투표"]
-        UC_Comment["댓글 작성"]
+        UC_My((마이페이지))
+        UC_Out((회원 탈퇴))
     end
 
-    %% Relations - Guest
+    %% Relations - Guest (Only Join & View)
     G --> UC_Join
-    G --> UC_Login
     G --> UC_List
     G --> UC_View
     
-    %% Relations - Member
-    M --> UC_My
-    M --> UC_Out
+    %% Relations - Member (Login + Interaction)
+    M --> UC_Login
     M --> UC_Create
     M --> UC_Relay
     M --> UC_VoteBook
     M --> UC_VoteSent
     M --> UC_Comment
+    M --> UC_My
+    M --> UC_Out
     
     %% Relationships (Include/Extend)
+    %% Extension: Arrow points from Extension to Base
     UC_Search -.->|&lt;&lt;extend&gt;&gt;| UC_List
     UC_Filter -.->|&lt;&lt;extend&gt;&gt;| UC_List
     UC_BookView -.->|&lt;&lt;extend&gt;&gt;| UC_View
     
+    %% Include: Arrow points from Base to Included
     UC_Relay -.->|&lt;&lt;include&gt;&gt;| UC_Check
+    UC_Create -.->|&lt;&lt;include&gt;&gt;| UC_Check
     
+    %% Styles
     style UC_Check stroke-dasharray: 5 5,fill:#eee
     
-    %% Member includes Guest capabilities
-    M -.-> G
+    %% Inheritance: Member is a Guest (can View/List)
+    M --|> G
 ```
 
 <br>
