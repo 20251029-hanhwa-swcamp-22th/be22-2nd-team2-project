@@ -1,10 +1,14 @@
 package com.team2.nextpage.command.reaction.service;
 
+import com.team2.nextpage.command.member.entity.Member;
+import com.team2.nextpage.command.member.repository.MemberRepository;
 import com.team2.nextpage.command.reaction.dto.request.CreateCommentRequest;
 import com.team2.nextpage.command.reaction.dto.request.UpdateCommentRequest;
 import com.team2.nextpage.command.reaction.entity.Comment;
 import com.team2.nextpage.command.reaction.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReactionService {
 
   private final CommentRepository commentRepository;
+  private final MemberRepository memberRepository;
 
   /**
    * 댓글 작성
@@ -28,11 +33,11 @@ public class ReactionService {
    */
   public Long addComment(CreateCommentRequest request) {
 
-    long writerId = 1L; // 추후 회원 및 인증 기능 완성 시 'userId'로 값 변경
+    Member currentMember = getCurrentMember();
 
     Comment newComment = Comment.builder()
         .bookId(request.getBookId())
-        .writerId(writerId)
+        .writerId(currentMember.getUserId())
         .content(request.getContent())
         .build();
 
@@ -52,8 +57,10 @@ public class ReactionService {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
 
+    Member currentMember = getCurrentMember();
+
     // 권한 체크 (타인 댓글 수정/삭제 불가 예외 처리)
-    validateWriter(comment, 1L); // 추후 회원 및 인증 기능 완성 시 'userId'로 값 변경
+    validateWriter(comment, currentMember.getUserId());
 
     comment.updateContent(request.getContent());
   }
@@ -67,8 +74,10 @@ public class ReactionService {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
 
+    Member currentMember = getCurrentMember();
+
     // 권한 체크 (타인 댓글 수장/삭제 불가 예외 처리)
-    validateWriter(comment, 1L); // 추후 회원 및 인증 기능 완성 시 'userId'로 값 변경
+    validateWriter(comment, currentMember.getUserId());
 
     commentRepository.delete(comment);
 
@@ -102,5 +111,22 @@ public class ReactionService {
     if (!comment.getWriterId().equals(userId)){
       throw new IllegalArgumentException("작성자만 수정/삭제할 수 있습니다.");
     }
+  }
+
+  private Member getCurrentMember(){
+    Object principal = SecurityContextHolder
+        .getContext()
+        .getAuthentication()
+        .getPrincipal();
+    String email;
+
+    if (principal instanceof UserDetails) {
+      email = ((UserDetails) principal).getUsername();
+    } else {
+      email = principal.toString();
+    }
+    return memberRepository.findByUserEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("로그인된 사용자 정보를 찾을 수 없습니다."));
+
   }
 }
