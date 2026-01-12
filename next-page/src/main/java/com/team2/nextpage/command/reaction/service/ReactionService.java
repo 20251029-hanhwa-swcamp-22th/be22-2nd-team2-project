@@ -1,12 +1,12 @@
 package com.team2.nextpage.command.reaction.service;
 
-import com.team2.nextpage.command.member.entity.Member;
 import com.team2.nextpage.command.member.repository.MemberRepository;
 import com.team2.nextpage.command.reaction.dto.request.CreateCommentRequest;
 import com.team2.nextpage.command.reaction.dto.request.UpdateCommentRequest;
 import com.team2.nextpage.command.reaction.entity.Comment;
 import com.team2.nextpage.command.reaction.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -23,21 +23,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReactionService {
 
   private final CommentRepository commentRepository;
+  // MemberRepository는 userId만 쓸 거면 필요 없지만, 혹시 몰라 남겨둠 (안 쓰면 삭제 가능)
   private final MemberRepository memberRepository;
 
   /**
    * 댓글 작성
-   *
-   * @param request 댓글 작성 요청 정보(bookId, content)
-   * @return        생성된 댓글의 ID
    */
   public Long addComment(CreateCommentRequest request) {
 
-    Member currentMember = getCurrentMember();
+    // 1. 안전하게 userId 가져오기
+    Long currentUserId = getCurrentUserId();
 
     Comment newComment = Comment.builder()
         .bookId(request.getBookId())
-        .writerId(currentMember.getUserId())
+        .writerId(currentUserId)
         .content(request.getContent())
         .build();
 
@@ -48,64 +47,43 @@ public class ReactionService {
 
   /**
    * 댓글 수정
-   *
-   * @param commentId 수정할 댓글 ID
-   * @param request   수정할 내용이 담긴 DTO
    */
   public void modifyComment(Long commentId, UpdateCommentRequest request) {
 
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
 
-    Member currentMember = getCurrentMember();
+    Long currentUserId = getCurrentUserId();
 
-    // 권한 체크 (타인 댓글 수정/삭제 불가 예외 처리)
-    validateWriter(comment, currentMember.getUserId());
+    validateWriter(comment, currentUserId);
 
     comment.updateContent(request.getContent());
   }
 
   /**
    * 댓글 삭제
-   *
-   * @param commentId 삭제할 댓글 ID
    */
   public void removeComment(Long commentId){
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 댓글입니다."));
 
-    Member currentMember = getCurrentMember();
+    Long currentUserId = getCurrentUserId();
 
-    // 권한 체크 (타인 댓글 수장/삭제 불가 예외 처리)
-    validateWriter(comment, currentMember.getUserId());
+    validateWriter(comment, currentUserId);
 
     commentRepository.delete(comment);
-
-
   }
 
   /**
    * 소설 좋아요 투표
-   * <p>
-   * [Hint]
-   * 1. VoteRequest(bookId, voteType)를 인자로 받습니다.
-   * 2. 이미 투표했는지 중복 확인을 수행합니다.
-   * 3. BookVote Entity를 저장합니다.
-   * 4. 투표 결과를 반환합니다 (true: 투표 성공, false: 취소 등).
    */
   public Boolean voteBook(/* VoteRequest request */) {
     // TODO: 정병진 구현 필요
-
     return null;
   }
 
   /**
-   * 작성자 권한 검증(내부 헬퍼 메서드)
-   * 요청한 사용자(userId)가 댓글 작성자(writerId)와 일치하는지 확인합니다.
-   *
-   * @param comment 검증할 댓글 엔티티
-   * @param userId  요청을 보낸 사용자의 ID
-   * @throws IllegalArgumentException 작성자가 아닐 경우 예외 발생
+   * 작성자 권한 검증
    */
   private void validateWriter(Comment comment, Long userId) {
     if (!comment.getWriterId().equals(userId)){
@@ -113,20 +91,35 @@ public class ReactionService {
     }
   }
 
-  private Member getCurrentMember(){
-    Object principal = SecurityContextHolder
-        .getContext()
-        .getAuthentication()
-        .getPrincipal();
-    String email;
+  /**
+   * 현재 로그인한 사용자의 ID(PK)를 반환하는 메서드 (가장 안전한 방식)
+   */
+  private Long getCurrentUserId() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (principal instanceof UserDetails) {
-      email = ((UserDetails) principal).getUsername();
-    } else {
-      email = principal.toString();
+    // 1. 인증 정보가 아예 없거나, 로그인하지 않은 경우(anonymousUser) 체크
+    if (authentication == null || !authentication.isAuthenticated() ||
+        authentication.getPrincipal().equals("anonymousUser")) {
+      throw new IllegalArgumentException("로그인이 필요한 서비스입니다.");
     }
-    return memberRepository.findByUserEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("로그인된 사용자 정보를 찾을 수 없습니다."));
 
+    Object principal = authentication.getPrincipal();
+
+    // 2. Principal이 UserDetails 타입인지 확인 (가장 정석)
+    if (principal instanceof UserDetails) {
+      String username = ((UserDetails) principal).getUsername();
+      try {
+        return Long.parseLong(username); // username에 userId가 들어있다고 가정
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException("유효하지 않은 사용자 ID 형식입니다.");
+      }
+    }
+
+    // 3. 만약 UserDetails가 아니라 그냥 String 등으로 들어온 경우 (방어 코드)
+    try {
+      return Long.parseLong(principal.toString());
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("사용자 정보를 식별할 수 없습니다.");
+    }
   }
 }
