@@ -2,6 +2,7 @@ package com.team2.nextpage.command.reaction.controller;
 
 import com.team2.nextpage.command.reaction.dto.request.CreateCommentRequest;
 import com.team2.nextpage.command.reaction.dto.request.UpdateCommentRequest;
+import com.team2.nextpage.command.reaction.dto.request.VoteRequest;
 import com.team2.nextpage.command.reaction.service.ReactionService;
 import com.team2.nextpage.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class ReactionController {
    * POST /api/reactions/comments
    *
    * @param request 댓글 작성 요청 객체 (Body)
-   * @return        생성된 댓글의 ID
+   * @return 생성된 댓글의 ID
    */
   @PostMapping("/comments")
   public ResponseEntity<ApiResponse<Long>> createComment(
@@ -41,16 +42,14 @@ public class ReactionController {
    *
    * @param commentId 수정할 댓글의 ID
    * @param request   수정할 내용이 담긴 요청 객체(Body)
-   * @return          성공시 데이터 없이 성공 응답 반환
+   * @return 성공시 데이터 없이 성공 응답 반환
    */
   @PatchMapping("/comments/{commentId}")
   public ResponseEntity<ApiResponse<Void>> modifyComment(
       @PathVariable Long commentId,
-      @RequestBody UpdateCommentRequest request
-  ) {
+      @RequestBody UpdateCommentRequest request) {
     reactionService.modifyComment(commentId, request);
     return ResponseEntity.ok(ApiResponse.success());
-
 
   }
 
@@ -59,12 +58,11 @@ public class ReactionController {
    * DELETE /api/reactions/comments/{commentId}
    *
    * @param commentId 삭제할 댓글의 ID (Path Variable)
-   * @return          성공 시 데이터 없이 성공 응답 반환
+   * @return 성공 시 데이터 없이 성공 응답 반환
    */
   @DeleteMapping("/comments/{commentId}")
   public ResponseEntity<ApiResponse<Void>> removeComment(
-      @PathVariable Long commentId
-  ) {
+      @PathVariable Long commentId) {
     reactionService.removeComment(commentId);
     return ResponseEntity.ok(ApiResponse.success());
   }
@@ -74,8 +72,8 @@ public class ReactionController {
    * POST /api/reactions/votes
    */
   @PostMapping("/votes")
-  public ResponseEntity<ApiResponse<Boolean>> vote(/* @RequestBody VoteRequest request */) {
-    Boolean result = reactionService.voteBook(/* request */);
+  public ResponseEntity<ApiResponse<Boolean>> vote(@RequestBody VoteRequest request) {
+    Boolean result = reactionService.voteBook(request);
     return ResponseEntity.ok(ApiResponse.success(result));
   }
 }

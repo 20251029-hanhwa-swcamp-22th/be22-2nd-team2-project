@@ -2,12 +2,17 @@ package com.team2.nextpage.command.reaction.service;
 
 import com.team2.nextpage.command.reaction.dto.request.CreateCommentRequest;
 import com.team2.nextpage.command.reaction.dto.request.UpdateCommentRequest;
+import com.team2.nextpage.command.reaction.dto.request.VoteRequest;
+import com.team2.nextpage.command.reaction.entity.BookVote;
 import com.team2.nextpage.command.reaction.entity.Comment;
+import com.team2.nextpage.command.reaction.repository.BookVoteRepository;
 import com.team2.nextpage.command.reaction.repository.CommentRepository;
 import com.team2.nextpage.common.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 /**
  * 반응(댓글/투표) Command 서비스
@@ -20,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReactionService {
 
   private final CommentRepository commentRepository;
+  private final BookVoteRepository bookVoteRepository;
 
   /**
    * 댓글 작성
@@ -76,18 +82,41 @@ public class ReactionService {
   }
 
   /**
-   * 소설 좋아요 투표
-   * <p>
-   * [Hint]
-   * 1. VoteRequest(bookId, voteType)를 인자로 받습니다.
-   * 2. 이미 투표했는지 중복 확인을 수행합니다.
-   * 3. BookVote Entity를 저장합니다.
-   * 4. 투표 결과를 반환합니다 (true: 투표 성공, false: 취소 등).
+   * 소설 좋아요/싫어요 투표 처리 (토글 방식)
+   * 1. 기록 없음 -> 투표 생성 (true 반환)
+   * 2. 기록 있음 + 같은 타입 -> 투표 취소 (삭제, false 반환)
+   * 3. 기록 있음 + 다른 타입 -> 투표 변경 (수정, true 반환)
+   *
+   * @param request 투표 요청 정보 (bookId, voteType)
+   * @return 최종 투표 반영 여부 (true: 반영됨 / false: 취소됨)
    */
-  public Boolean voteBook(/* VoteRequest request */) {
-    // TODO: 정병진 구현 필요
+  public Boolean voteBook(VoteRequest request) {
+    Long voterId = SecurityUtil.getCurrentUserId();
 
-    return null;
+    // 1. 이미 투표한 기록이 있는지 확인
+    Optional<BookVote> existingVote = bookVoteRepository.findByBookIdAndVoterId(request.getBookId(), voterId);
+
+    if (existingVote.isPresent()) {
+      BookVote vote = existingVote.get();
+      // 2. 이미 투표 후 또 누르면 -> 취소
+      if (vote.getVoteType() == request.getVoteType()) {
+        bookVoteRepository.delete(vote);
+        return false;
+      } else {
+        // 다른 걸 눌렀다면, 다른 걸로 변경(좋아요 -> 싫어요, 싫어요 -> 좋아요)
+        vote.changeVoteType(request.getVoteType());
+
+        return true; // 투표 변경
+      }
+    } else {
+      BookVote newVote = BookVote.builder()
+          .bookId(request.getBookId())
+          .voterId(voterId)
+          .voteType(request.getVoteType())
+          .build();
+      bookVoteRepository.save(newVote);
+      return true;
+    }
   }
 
   /**
