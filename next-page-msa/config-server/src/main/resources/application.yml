@@ -7,6 +7,6 @@ spring:
     config:
       server:
         native:
-          search-locations: classpath:/config/ # ?? ?? ??? ?? ????? ??
+          uri: https://github.com/fdrn9999/next-page-env
 profiles:
   active: native
