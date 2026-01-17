@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.9'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com.team2'
@@ -37,6 +38,7 @@ dependencies {
 subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'jacoco'
 
     repositories {
         mavenCentral()
@@ -54,8 +56,110 @@ subprojects {
             mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.0.1"
         }
     }
+
+    // JUnit Platform 설정
+    tasks.withType(Test) {
+        useJUnitPlatform()
+        finalizedBy jacocoTestReport // 테스트 후 자동으로 리포트 생성
+    }
+
+    // Jacoco 설정
+    jacoco {
+        toolVersion = "0.8.12"
+    }
+
+    jacocoTestReport {
+        dependsOn test // 리포트 생성 전에 테스트 실행
+
+        reports {
+            xml.required = true
+            html.required = true
+            csv.required = false
+        }
+
+        afterEvaluate {
+            classDirectories.setFrom(files(classDirectories.files.collect {
+                fileTree(dir: it, exclude: [
+                    '**/config/**',
+                    '**/dto/**',
+                    '**/entity/**',
+                    '**/*Application.class',
+                    '**/websocket/dto/**',
+                    '**/feign/**'
+                ])
+            }))
+        }
+    }
+
+    jacocoTestCoverageVerification {
+        violationRules {
+            rule {
+                enabled = true
+                element = 'CLASS'
+
+                limit {
+                    counter = 'LINE'
+                    value = 'COVEREDRATIO'
+                    minimum = 0.70 // 70% 커버리지 요구
+                }
+
+                limit {
+                    counter = 'BRANCH'
+                    value = 'COVEREDRATIO'
+                    minimum = 0.70
+                }
+            }
+        }
+    }
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// 전체 프로젝트의 통합 Jacoco 리포트 생성
+task jacocoRootReport(type: JacocoReport) {
+    description = 'Generates an aggregate report from all subprojects'
+    group = 'verification'
+
+    dependsOn subprojects*.test
+
+    // 모든 서브프로젝트의 실행 데이터 수집
+    executionData.from = files(subprojects.collect {
+        fileTree(dir: "${it.buildDir}/jacoco", include: '**/*.exec')
+    })
+
+    // 소스 디렉토리 설정
+    sourceDirectories.from = files(subprojects.collect {
+        it.sourceSets.main.allSource.srcDirs
+    })
+
+    // 클래스 디렉토리 설정 (제외 패턴 적용)
+    classDirectories.from = files(subprojects.collect {
+        fileTree(dir: "${it.buildDir}/classes/java/main", exclude: [
+            '**/config/**',
+            '**/dto/**',
+            '**/entity/**',
+            '**/*Application.class',
+            '**/websocket/dto/**',
+            '**/feign/**'
+        ])
+    })
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+
+        html.outputLocation = file("${buildDir}/reports/jacoco/aggregate")
+        xml.outputLocation = file("${buildDir}/reports/jacoco/aggregate/jacocoTestReport.xml")
+    }
+
+    doLast {
+        println "========================================="
+        println "Jacoco 통합 리포트가 생성되었습니다:"
+        println "HTML: ${reports.html.outputLocation}/index.html"
+        println "XML: ${reports.xml.outputLocation}"
+        println "========================================="
+    }
 }
