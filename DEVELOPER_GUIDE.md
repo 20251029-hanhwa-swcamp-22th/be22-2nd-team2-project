@@ -159,9 +159,9 @@ resilience4j:
 ---
 
 ## PART 1-5. 요구사항 정의서
- 
+
  > **Note:** 상세 기능 명세 및 비기능 요구사항은 [README.md - PART 1-5 상세 요구사항 정의서](../README.md#part-1-5-상세-요구사항-정의서-detailed-requirements)에 통합 관리됩니다.
- 
+
  ---
 ---
 
@@ -202,9 +202,9 @@ resilience4j:
 - **제약:** 1인 1투표 (`UNIQUE KEY`)
 
 ### ERD (Entity Relationship Diagram)
- 
+
  > **Note:** ERD는 [README.md - ERD 설계](../README.md#part-1-6-erd-설계) 또는 [MSA_IMPLEMENTATION_COMPLETE.md](../next-page-msa/MSA_IMPLEMENTATION_COMPLETE.md)를 참고하세요.
- 
+
  ---
 
 ## PART 1-4. API Testing Guide
@@ -227,7 +227,7 @@ resilience4j:
 **파일 위치:**
 
 - Monolithic: `next-page/http/api-test.http`
-- MSA: `next-page-msa/http/msa-api-test.http`
+- MSA: `next-page-msa/http/api-test.http`
 
 **사용법:**
 
@@ -501,9 +501,8 @@ Microservices Architecture 전환 (2026.01.11 ~)
 ## PART 3-2. MSA 아키텍처 구조
 
 ### 시스템 구성도
- 
- > **Note:** 시스템 구성도는 [README.md - 식스템 구성도](../README.md#part-3-2-msa-시스템-구성도)를 참고하세요.
 
+ > **Note:** 시스템 구성도는 [README.md - 식스템 구성도](../README.md#part-3-2-msa-시스템-구성도)를 참고하세요.
 
 ### 서비스별 책임
 
@@ -660,11 +659,14 @@ private Long userId;     // ✅ BIGINT와 매핑
 ### 🔧 0단계: 환경 선택
 
 #### Option A: Local Config (권장 - 개발 환경)
+
 각 서비스의 `application.yml`에 설정이 이미 포함되어 있습니다.
+
 - **장점:** 별도의 Config Server 없이 바로 실행 가능
 - **단점:** 설정 변경 시 각 서비스 재시작 필요
 
 #### Option B: Config Server (권장 - 운영 환경)
+
 Git 저장소에서 중앙 집중식 설정 관리
 
 1. Git 저장소 준비 (예: `next-page-config`)
@@ -686,12 +688,14 @@ CONFIG_GIT_PASSWORD=your_git_token_or_password
 #### 방법 1: 자동 스크립트 (권장)
 
 **Windows (PowerShell):**
+
 ```powershell
 cd database-scripts
 .\setup-all-databases.ps1
 ```
 
 **Linux/Mac (Bash):**
+
 ```bash
 cd database-scripts
 chmod +x setup.sh
